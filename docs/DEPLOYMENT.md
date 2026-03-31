@@ -110,9 +110,11 @@ docker compose --profile tunnel up -d --build
 
 > **Note:** Caddy is already included in the Docker Compose stack as the default reverse proxy. You only need an external reverse proxy if you're integrating with an existing infrastructure (e.g., Traefik, HAProxy, or a cloud load balancer).
 
-When using an external proxy, point it at the Caddy port (`APP_PORT`, default 3021). Caddy handles internal routing between the frontend and backend, so your external proxy only needs a single upstream:
+When using an external proxy, point it at the Caddy port (`APP_PORT`, default 3021). Caddy handles internal routing between the frontend and backend, so your external proxy only needs a single upstream.
 
-```
+Example (nginx-style syntax — adapt for your proxy):
+
+```nginx
 upstream drawgo {
     server 127.0.0.1:3021;
 }

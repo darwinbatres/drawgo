@@ -342,10 +342,10 @@ graph TB
 
 - **Hub:** Manages rooms (one per board), runs tick loops for cursor batching
 - **Room:** Tracks connected clients, buffers cursor updates, broadcasts
-- **Client:** Goroutine pair (readPump + writePump), 64-slot buffered send channel, per-client sliding-window rate limiter (30 msg/sec)
-- **Cursor Batching:** Cursors batched at configurable intervals (default 33ms / ~30fps) to reduce network traffic; frontend renders with self-filtering
+- **Client:** Goroutine pair (readPump + writePump), 64-slot buffered send channel, per-client sliding-window rate limiter (cursor: 30/sec, scene: 5/sec)
+- **Cursor Batching:** Cursors batched at configurable intervals (default 33ms / ~30fps) to reduce network traffic; frontend interpolates to 60fps via `requestAnimationFrame`
 - **Auth:** JWT via HttpOnly `access_token` cookie (default), `?token=` query param, or share link via `?share=` query parameter
-- **Cursor Rendering:** Uses Excalidraw's native `collaborators` prop (Map<SocketId, Collaborator>) — no custom overlay needed
+- **Cursor Rendering:** Custom `LiveCursors` component with requestAnimationFrame-based interpolation for smooth 60fps cursor movement, color coding, and user name labels
 
 ## Frontend Architecture
 

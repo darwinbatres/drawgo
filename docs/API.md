@@ -747,7 +747,7 @@ Upgrade to WebSocket for real-time collaboration.
 2. `share=<shareToken>` query parameter — Share link token
 3. `access_token` HttpOnly cookie — Automatic cookie-based auth (no query param needed)
 
-**Per-Client Rate Limiting:** Each client is limited to 30 messages/second via a sliding-window rate limiter. Excessive messages are silently dropped.
+**Per-Client Rate Limiting:** Each client has a sliding-window rate limiter — cursor messages are capped at 30/second and scene updates at 5/second. Excessive messages are silently dropped.
 
 **Message Format:**
 ```json

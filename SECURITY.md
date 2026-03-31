@@ -54,7 +54,7 @@ Instead, report security issues responsibly by emailing the maintainers directly
   - Auth: `RATE_LIMIT_AUTH_PER_MINUTE` (default 10)
   - Upload: `RATE_LIMIT_UPLOAD_PER_MINUTE` (default 30)
   - WebSocket: `RATE_LIMIT_WS_PER_MINUTE` (default 10)
-- **Per-client WS rate limiting** — Each WebSocket client has a sliding-window rate limiter (30 messages/second). Excessive messages are silently dropped to prevent DoS via message flooding.
+- **Per-client WS rate limiting** — Each WebSocket client has a sliding-window rate limiter. Cursor messages are capped at 30/second and scene updates at 5/second. Excessive messages are silently dropped to prevent DoS via message flooding.
 - **Brute-force protection** — IP lockout after configurable failed login attempts (`BRUTEFORCE_MAX_ATTEMPTS`, default 5)
 - **Security headers** — Set by Go middleware and Caddy reverse proxy:
   - `X-Frame-Options: DENY` (Caddy) / `SAMEORIGIN` (Go)

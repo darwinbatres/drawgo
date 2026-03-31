@@ -26,7 +26,7 @@ Use a clear title, describe the feature, explain why it's useful, and list alter
 2. Follow the [Development Setup](#development-setup) below
 3. Make your changes
 4. Run tests (see [Testing](#testing))
-5. Run linters (`pnpm lint` for frontend, `golangci-lint run` for backend)
+5. Run linters (`pnpm lint` for frontend, `go vet ./...` for backend)
 6. Commit with a [conventional message](#commit-messages)
 7. Push and open a Pull Request
 

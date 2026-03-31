@@ -50,7 +50,8 @@ backend/
     │   ├── bruteforce.go       # IP-based login lockout
     │   ├── cache.go            # Cache-Control + ETag
     │   ├── csrf.go             # Origin/Referer validation
-    │   ├── logger.go           # Request logging (zerolog)
+    │   ├── logging.go          # Request logging (zerolog)
+    │   ├── metrics.go          # Request metrics (latency, status codes, RPS)
     │   ├── ratelimit.go        # Per-IP rate limit tiers
     │   ├── recovery.go         # Panic recovery
     │   ├── security.go         # Security headers
@@ -174,7 +175,7 @@ go test ./internal/handler/... -run TestBackupHandler -v
 | Integration       | `*_integration_test.go`     | Testcontainers     | ~32   |
 | Handler (httptest)| `handler/*_test.go`         | gomock + httptest   | ~15   |
 
-**Total: ~260 tests**
+**Total: ~440+ tests**
 
 ### Regenerating Mocks
 
@@ -200,6 +201,7 @@ All endpoints are under `/api/v1`. See [docs/API.md](../docs/API.md) for full re
 | Share              | `/boards/{id}/share/*`        | Required |
 | Share (public)     | `/share/{token}`              | Public   |
 | Audit              | `/orgs/{id}/audit/*`          | Required |
+| Logs               | `/logs`, `/logs/summary`      | Required |
 | Backups            | `/backups/*`                  | Required |
 | WebSocket          | `/ws/boards/{id}`             | Cookie/Query |
 | WebSocket Stats    | `/ws/stats`                   | Required |
@@ -211,12 +213,13 @@ All endpoints are under `/api/v1`. See [docs/API.md](../docs/API.md) for full re
 2. `RealIP` — Extract client IP from proxy headers
 3. `Recovery` — Panic recovery with structured logging
 4. `Logger` — Request/response logging
-5. `Security` — Security headers (X-Frame-Options, etc.)
-6. `CORS` — Cross-origin request handling
-7. `RateLimit` — Per-IP rate limiting
-8. `MaxBodySize` — Request body size limits
-9. `Compress` — gzip/deflate response compression
-10. `CSRF` — Origin/Referer validation
+5. `RequestMetrics` — Latency, status codes, RPS tracking
+6. `Security` — Security headers (X-Frame-Options, etc.)
+7. `CORS` — Cross-origin request handling
+8. `RateLimit` — Per-IP rate limiting
+9. `MaxBodySize` — Request body size limits
+10. `Compress` — gzip/deflate response compression
+11. `CSRF` — Origin/Referer validation
 
 ## Build
 
@@ -225,7 +228,8 @@ All endpoints are under `/api/v1`. See [docs/API.md](../docs/API.md) for full re
 go build ./cmd/server
 
 # Production build with version info
-go build -ldflags "-X main.Version=1.0.0 -X main.CommitSHA=$(git rev-parse HEAD) -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" ./cmd/server
+PKG=github.com/darwinbatres/drawgo/backend/internal/pkg/buildinfo
+go build -ldflags "-s -w -X $PKG.Version=1.0.0 -X $PKG.CommitSHA=$(git rev-parse --short HEAD) -X $PKG.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" ./cmd/server
 
 # Docker build
 docker build -t drawgo-backend .

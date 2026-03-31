@@ -5,7 +5,8 @@
 <h1 align="center">Drawgo</h1>
 
 <p align="center">
-  A self-hosted whiteboard built with <strong>Draw</strong> (Excalidraw) + <strong>Go</strong> — hence the name.
+  A self-hosted whiteboard built with <strong>Draw</strong> (Excalidraw) + <strong>Go</strong> — hence the name.<br/>
+  <em>A learning project and labor of love, not a production alternative to <a href="https://excalidraw.com">excalidraw.com</a>.</em>
 </p>
 
 ---
@@ -14,7 +15,9 @@
 >
 > [Excalidraw](https://excalidraw.com) is the best whiteboard tool available — free, open-source, beautifully designed, end-to-end encrypted, and actively maintained by a world-class team. **For nearly all use cases, the official Excalidraw is the right choice.**
 >
-> Drawgo is **not** a replacement. It wraps the open-source Excalidraw editor inside an opinionated, self-hosted stack for a narrow set of requirements the official product intentionally doesn't cover:
+> Drawgo is a **personal side project** built primarily to learn Go and to have fun exploring full-stack architecture. It wraps the open-source Excalidraw editor inside an opinionated, self-hosted stack — but it is **not** a replacement for the official product.
+>
+> Think of it as a playground that happens to be useful if you need:
 >
 > - **Multi-tenant workspaces** with role-based access (Owner / Admin / Member / Viewer)
 > - **Persistent version history** with point-in-time restore
@@ -77,7 +80,7 @@ graph TB
 
 ### Collaboration
 - Share Links — create viewer/editor links with optional expiry
-- Live Cursors — smooth 30fps cursor positions via WebSocket with native Excalidraw rendering
+- Live Cursors — smooth 60fps cursor positions via WebSocket with interpolated rendering
 - Presence Indicators — see who's viewing a board in real time
 - Join/Leave Events — real-time notifications when collaborators connect or disconnect
 
@@ -97,7 +100,7 @@ graph TB
 - OAuth — Google and GitHub (when configured)
 - CSRF Protection — Origin/Referer validation on state-changing requests
 - Rate Limiting — per-IP tiers for general, auth, upload, and WebSocket
-- Per-Client WS Rate Limiting — sliding-window rate limiter drops excessive messages
+- Per-Client WS Rate Limiting — sliding-window rate limiter per message type (cursor: 30/sec, scene: 5/sec)
 - Brute-Force Protection — IP lockout after failed login attempts
 - Audit Logging — every action logged with actor, IP, user agent
 
@@ -322,7 +325,7 @@ MIT
 
 ## Acknowledgments
 
-- **[Excalidraw](https://excalidraw.com)** — The amazing whiteboard that powers this project. If you don't need self-hosting, use them directly.
+- **[Excalidraw](https://excalidraw.com)** — The amazing whiteboard that powers this project. If you don't need self-hosting, use them directly. Seriously.
 - **[Mermaid.js](https://mermaid.js.org)** — Diagram rendering in markdown cards
 - **[Tiptap](https://tiptap.dev)** — Rich text editing for Notion-style cards
 - **[Next.js](https://nextjs.org)** — React framework for the frontend
@@ -330,3 +333,9 @@ MIT
 - **[pgx](https://github.com/jackc/pgx)** — PostgreSQL driver for Go
 - **[MinIO](https://min.io)** — S3-compatible object storage
 - **[Caddy](https://caddyserver.com)** — Reverse proxy with automatic HTTPS
+
+---
+
+<p align="center">
+  Built for fun and to learn Go. Use <a href="https://excalidraw.com">excalidraw.com</a> for the real deal.
+</p>
