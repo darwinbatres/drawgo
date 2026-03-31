@@ -22,10 +22,14 @@
 		X-Frame-Options "DENY"
 		# Control referrer leakage
 		Referrer-Policy "strict-origin-when-cross-origin"
+		# HSTS — enforce HTTPS for 1 year including subdomains
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		# Restrict browser features
 		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
 		# Content Security Policy — allow self + inline styles (Excalidraw needs them)
-		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' wss: ws:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		# font-src/script-src include esm.sh for Excalidraw's bundled fonts and modules
+		# script-src/connect-src include static.cloudflareinsights.com for Cloudflare Web Analytics
+		Content-Security-Policy "default-src 'self'; script-src 'self' https://esm.sh https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' https://esm.sh; connect-src 'self' wss: ws: https://cloudflareinsights.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 		# Remove server identity
 		-Server
 	}

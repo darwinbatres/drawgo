@@ -144,6 +144,16 @@ func (r *MembershipRepository) Exists(ctx context.Context, orgID, userID string)
 	return exists, err
 }
 
+// IsOwnerOfAny returns true if the user holds the OWNER role in at least one organization.
+func (r *MembershipRepository) IsOwnerOfAny(ctx context.Context, userID string) (bool, error) {
+	var exists bool
+	err := r.pool.QueryRow(ctx,
+		`SELECT EXISTS(SELECT 1 FROM memberships WHERE user_id = $1 AND role = 'OWNER')`,
+		userID,
+	).Scan(&exists)
+	return exists, err
+}
+
 // CreateInTx creates a membership within an existing transaction.
 func (r *MembershipRepository) CreateInTx(ctx context.Context, tx pgx.Tx, orgID, userID string, role models.OrgRole) (*models.Membership, error) {
 	m := &models.Membership{

@@ -12,6 +12,7 @@ import (
 	"github.com/darwinbatres/drawgo/backend/internal/handler"
 	"github.com/darwinbatres/drawgo/backend/internal/middleware"
 	"github.com/darwinbatres/drawgo/backend/internal/pkg/jwt"
+	"github.com/darwinbatres/drawgo/backend/internal/service"
 )
 
 // Deps holds all dependencies needed to wire up routes.
@@ -21,6 +22,7 @@ type Deps struct {
 	JWTManager     *jwt.Manager
 	BruteForce     *middleware.BruteForce
 	RequestMetrics *middleware.RequestMetrics
+	Access         *service.AccessService
 	// Handlers
 	Health  *handler.HealthHandler
 	Auth    *handler.AuthHandler
@@ -43,7 +45,7 @@ func New(deps Deps) chi.Router {
 
 	// --- Global middleware stack (order matters) ---
 	r.Use(chimw.RequestID)
-	r.Use(chimw.RealIP)
+	r.Use(middleware.TrustedRealIP(deps.Config.TrustedProxies))
 	r.Use(middleware.Recovery(deps.Log))
 	r.Use(middleware.Logger(deps.Log))
 	if deps.RequestMetrics != nil {
@@ -161,22 +163,27 @@ func New(deps Deps) chi.Router {
 			protected.Get("/boards/{id}/share", deps.Share.List)
 			protected.Delete("/boards/{id}/share/{linkId}", deps.Share.Revoke)
 
-			// System stats (admin)
-			protected.Get("/stats", deps.Audit.SystemStats)
+			// System admin routes (require OWNER of any org)
+			protected.Group(func(admin chi.Router) {
+				admin.Use(middleware.AdminOnly(deps.Access.RequireSystemAdmin))
 
-			// Log viewer (admin)
-			protected.Get("/logs", deps.LogView.Query)
-			protected.Get("/logs/summary", deps.LogView.Summary)
+				// System stats (admin)
+				admin.Get("/stats", deps.Audit.SystemStats)
 
-			// Backup routes (admin)
-			protected.Post("/backups", deps.Backup.Create)
-			protected.Get("/backups", deps.Backup.List)
-			protected.Get("/backups/schedule", deps.Backup.GetSchedule)
-			protected.Put("/backups/schedule", deps.Backup.UpdateSchedule)
-			protected.Get("/backups/{id}", deps.Backup.Get)
-			protected.Get("/backups/{id}/download", deps.Backup.Download)
-			protected.Delete("/backups/{id}", deps.Backup.Delete)
-			protected.Post("/backups/{id}/restore", deps.Backup.Restore)
+				// Log viewer (admin)
+				admin.Get("/logs", deps.LogView.Query)
+				admin.Get("/logs/summary", deps.LogView.Summary)
+
+				// Backup routes (admin)
+				admin.Post("/backups", deps.Backup.Create)
+				admin.Get("/backups", deps.Backup.List)
+				admin.Get("/backups/schedule", deps.Backup.GetSchedule)
+				admin.Put("/backups/schedule", deps.Backup.UpdateSchedule)
+				admin.Get("/backups/{id}", deps.Backup.Get)
+				admin.Get("/backups/{id}/download", deps.Backup.Download)
+				admin.Delete("/backups/{id}", deps.Backup.Delete)
+				admin.Post("/backups/{id}/restore", deps.Backup.Restore)
+			})
 
 		})
 

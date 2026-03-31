@@ -110,10 +110,17 @@ func (h *WSHandler) Stats(w http.ResponseWriter, r *http.Request) {
 }
 
 // authenticate validates the connection request using JWT or share token.
+// Preference order: httpOnly cookie (most secure) → query param JWT → share token.
 func (h *WSHandler) authenticate(r *http.Request, boardID string) (*realtime.ViewerInfo, *apierror.Error) {
 	q := r.URL.Query()
 
-	// Try JWT auth from query param first
+	// Try JWT from httpOnly cookie first (browser WS requests carry cookies)
+	// This is preferred because cookies are not exposed in URLs/logs.
+	if tok := cookie.ReadAccess(r); tok != "" {
+		return h.authWithJWT(r.Context(), tok, boardID)
+	}
+
+	// Fall back to JWT from query param (for non-browser clients)
 	if tok := q.Get("token"); tok != "" {
 		return h.authWithJWT(r.Context(), tok, boardID)
 	}
@@ -121,11 +128,6 @@ func (h *WSHandler) authenticate(r *http.Request, boardID string) (*realtime.Vie
 	// Try share token
 	if shareTok := q.Get("share"); shareTok != "" {
 		return h.authWithShareToken(r.Context(), shareTok, boardID)
-	}
-
-	// Fall back to JWT from httpOnly cookie (browser WS requests carry cookies)
-	if tok := cookie.ReadAccess(r); tok != "" {
-		return h.authWithJWT(r.Context(), tok, boardID)
 	}
 
 	return nil, apierror.ErrUnauthorized.WithMessage("Missing token or share parameter")

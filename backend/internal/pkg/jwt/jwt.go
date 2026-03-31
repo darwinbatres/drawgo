@@ -18,9 +18,10 @@ type Claims struct {
 
 // Manager handles JWT creation and validation.
 type Manager struct {
-	secret       []byte
-	accessExpiry time.Duration
+	secret        []byte
+	accessExpiry  time.Duration
 	refreshExpiry time.Duration
+	blacklist     *Blacklist
 }
 
 // NewManager creates a JWT manager with the given configuration.
@@ -29,6 +30,7 @@ func NewManager(secret string, accessExpiry, refreshExpiry time.Duration) *Manag
 		secret:        []byte(secret),
 		accessExpiry:  accessExpiry,
 		refreshExpiry: refreshExpiry,
+		blacklist:     NewBlacklist(accessExpiry),
 	}
 }
 
@@ -50,7 +52,13 @@ func (m *Manager) CreateAccessToken(userID, email string) (string, error) {
 }
 
 // ValidateAccessToken parses and validates an access token, returning the claims.
+// Also checks the in-memory blacklist for revoked tokens.
 func (m *Manager) ValidateAccessToken(tokenStr string) (*Claims, error) {
+	// Check blacklist before expensive parsing
+	if m.blacklist != nil && m.blacklist.IsBlacklisted(tokenStr) {
+		return nil, fmt.Errorf("token has been revoked")
+	}
+
 	token, err := jwtv5.ParseWithClaims(tokenStr, &Claims{}, func(t *jwtv5.Token) (any, error) {
 		if _, ok := t.Method.(*jwtv5.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
@@ -66,6 +74,15 @@ func (m *Manager) ValidateAccessToken(tokenStr string) (*Claims, error) {
 		return nil, fmt.Errorf("invalid token claims")
 	}
 	return claims, nil
+}
+
+// RevokeAccessToken adds the given raw access token to the blacklist.
+// The token will be rejected on subsequent validation attempts until it
+// expires naturally (TTL matches the access token lifetime).
+func (m *Manager) RevokeAccessToken(tokenStr string) {
+	if m.blacklist != nil {
+		m.blacklist.Add(tokenStr)
+	}
 }
 
 // GenerateRefreshToken creates a cryptographically secure random token.

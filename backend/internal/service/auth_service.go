@@ -21,9 +21,10 @@ import (
 const BcryptCost = 12
 
 // TokenPair holds the access and refresh tokens returned after authentication.
+// RefreshToken is excluded from JSON responses — it is sent only via httpOnly cookies.
 type TokenPair struct {
 	AccessToken  string `json:"accessToken"`
-	RefreshToken string `json:"refreshToken"`
+	RefreshToken string `json:"-"`
 	ExpiresIn    int    `json:"expiresIn"`
 }
 

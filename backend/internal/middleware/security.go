@@ -22,11 +22,11 @@ func Security(allowedOrigins string) func(http.Handler) http.Handler {
 
 	csp := strings.Join([]string{
 		"default-src 'self'",
-		"script-src 'self'",
-		connectSrc,
+		"script-src 'self' https://esm.sh https://static.cloudflareinsights.com",
+		connectSrc + " https://cloudflareinsights.com",
 		"img-src 'self' data: blob:",
 		"style-src 'self' 'unsafe-inline'",
-		"font-src 'self'",
+		"font-src 'self' https://esm.sh",
 		"frame-ancestors 'none'",
 		"base-uri 'self'",
 		"form-action 'self'",

@@ -126,7 +126,7 @@ async function fetchApi<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = path.startsWith("http") ? path : `${API_PREFIX}${path}`;
+  const url = `${API_PREFIX}${path}`;
 
   const response = await fetch(url, {
     ...options,
@@ -167,7 +167,7 @@ async function fetchPaginated<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<PaginatedResponse<T>> {
-  const url = path.startsWith("http") ? path : `${API_PREFIX}${path}`;
+  const url = `${API_PREFIX}${path}`;
 
   const response = await fetch(url, {
     ...options,

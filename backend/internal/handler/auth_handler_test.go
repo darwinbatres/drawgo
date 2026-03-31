@@ -39,7 +39,7 @@ func newAuthHandlerEnv(t *testing.T) *authHandlerEnv {
 
 	authSvc := service.NewAuthService(userRepo, refreshRepo, auditRepo, jwtMgr, testutil.NopLogger())
 	cfg := &config.Config{Env: "development"}
-	h := handler.NewAuthHandler(authSvc, cfg, nil)
+	h := handler.NewAuthHandler(authSvc, cfg, nil, jwtMgr)
 
 	return &authHandlerEnv{
 		handler:    h,

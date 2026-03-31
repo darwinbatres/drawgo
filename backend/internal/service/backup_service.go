@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/url"
 	"os/exec"
 	"strings"
 	"time"
@@ -289,15 +290,23 @@ func (s *BackupService) UpdateSchedule(ctx context.Context, actorID string, enab
 }
 
 // runPgDump executes pg_dump and returns the output.
+// Credentials are passed via environment variables (not CLI args) to prevent
+// leaking the database password in /proc or process listings.
 func (s *BackupService) runPgDump(ctx context.Context) ([]byte, error) {
+	pgEnv, dbName, err := parseDatabaseURL(s.cfg.DatabaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("pg_dump: invalid DATABASE_URL: %w", err)
+	}
+
 	cmd := exec.CommandContext(ctx, "pg_dump",
-		"--dbname="+s.cfg.DatabaseURL,
+		"--dbname="+dbName,
 		"--format=plain",
 		"--no-owner",
 		"--no-privileges",
 		"--clean",
 		"--if-exists",
 	)
+	cmd.Env = append(cmd.Environ(), pgEnv...)
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -311,13 +320,19 @@ func (s *BackupService) runPgDump(ctx context.Context) ([]byte, error) {
 }
 
 // runPsqlRestore executes psql to restore a SQL dump.
+// Credentials are passed via environment variables.
 func (s *BackupService) runPsqlRestore(ctx context.Context, data []byte) error {
+	pgEnv, dbName, err := parseDatabaseURL(s.cfg.DatabaseURL)
+	if err != nil {
+		return fmt.Errorf("psql: invalid DATABASE_URL: %w", err)
+	}
+
 	cmd := exec.CommandContext(ctx, "psql",
-		"--dbname="+s.cfg.DatabaseURL,
+		"--dbname="+dbName,
 		"--single-transaction",
 		"--quiet",
 	)
-
+	cmd.Env = append(cmd.Environ(), pgEnv...)
 	cmd.Stdin = bytes.NewReader(data)
 
 	var stderr bytes.Buffer
@@ -328,6 +343,39 @@ func (s *BackupService) runPsqlRestore(ctx context.Context, data []byte) error {
 	}
 
 	return nil
+}
+
+// parseDatabaseURL extracts connection parameters from a PostgreSQL URL and
+// returns them as environment variable strings (PGHOST, PGPORT, etc.) plus
+// the database name. This avoids passing credentials on the CLI.
+func parseDatabaseURL(dbURL string) (env []string, dbName string, err error) {
+	u, err := url.Parse(dbURL)
+	if err != nil {
+		return nil, "", err
+	}
+
+	host := u.Hostname()
+	port := u.Port()
+	if port == "" {
+		port = "5432"
+	}
+	user := u.User.Username()
+	password, _ := u.User.Password()
+	dbName = strings.TrimPrefix(u.Path, "/")
+
+	env = []string{
+		"PGHOST=" + host,
+		"PGPORT=" + port,
+		"PGUSER=" + user,
+		"PGPASSWORD=" + password,
+	}
+
+	// Pass through sslmode if specified
+	if sslmode := u.Query().Get("sslmode"); sslmode != "" {
+		env = append(env, "PGSSLMODE="+sslmode)
+	}
+
+	return env, dbName, nil
 }
 
 // auditLog is a convenience method for fire-and-forget audit logging.

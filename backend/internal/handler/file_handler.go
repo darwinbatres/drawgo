@@ -111,6 +111,9 @@ func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", mimeType)
 	w.Header().Set("Cache-Control", "private, max-age=86400, immutable")
+	w.Header().Set("Content-Disposition", "attachment")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'")
 	w.WriteHeader(http.StatusOK)
 	if _, err := io.Copy(w, reader); err != nil {
 		h.log.Error().Err(err).Str("fileId", fileID).Msg("error streaming file to client")

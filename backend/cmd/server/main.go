@@ -128,7 +128,7 @@ func main() {
 
 	// --- Handlers ---
 	healthHandler := handler.NewHealthHandler(pool, s3Client)
-	authHandler := handler.NewAuthHandler(authService, cfg, bruteForce)
+	authHandler := handler.NewAuthHandler(authService, cfg, bruteForce, jwtManager)
 	oauthHandler := handler.NewOAuthHandler(oauthService)
 	orgHandler := handler.NewOrgHandler(orgService)
 	memberHandler := handler.NewMemberHandler(orgService)
@@ -148,6 +148,7 @@ func main() {
 		JWTManager:     jwtManager,
 		BruteForce:     bruteForce,
 		RequestMetrics: requestMetrics,
+		Access:         accessService,
 		Health:         healthHandler,
 		Auth:       authHandler,
 		OAuth:      oauthHandler,

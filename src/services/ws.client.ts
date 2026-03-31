@@ -73,11 +73,14 @@ export class WSClient {
     }
     const params = new URLSearchParams();
 
-    if (this.options.token) {
-      params.set("token", this.options.token);
-    } else if (this.options.shareToken) {
+    // In browser contexts, the JWT is sent automatically via httpOnly cookies
+    // (Caddy/backend handle the WS upgrade with cookies). Only send the token
+    // as a query param for non-browser clients or when using share tokens,
+    // since query params leak to server logs and browser history.
+    if (this.options.shareToken) {
       params.set("share", this.options.shareToken);
     }
+    // Note: authenticated users rely on httpOnly cookie (auto-sent by browser)
 
     const url = `${wsBase}/api/v1/ws/boards/${this.options.boardId}?${params.toString()}`;
 

@@ -78,6 +78,7 @@ type MembershipRepo interface {
 	Delete(ctx context.Context, id string) error
 	CountByUser(ctx context.Context, userID string) (int, error)
 	Exists(ctx context.Context, orgID, userID string) (bool, error)
+	IsOwnerOfAny(ctx context.Context, userID string) (bool, error)
 }
 
 // BoardRepo defines board persistence operations.

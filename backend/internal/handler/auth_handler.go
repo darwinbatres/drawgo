@@ -7,6 +7,7 @@ import (
 	"github.com/darwinbatres/drawgo/backend/internal/middleware"
 	"github.com/darwinbatres/drawgo/backend/internal/pkg/apierror"
 	"github.com/darwinbatres/drawgo/backend/internal/pkg/cookie"
+	"github.com/darwinbatres/drawgo/backend/internal/pkg/jwt"
 	"github.com/darwinbatres/drawgo/backend/internal/pkg/response"
 	"github.com/darwinbatres/drawgo/backend/internal/pkg/validate"
 	"github.com/darwinbatres/drawgo/backend/internal/service"
@@ -17,11 +18,12 @@ type AuthHandler struct {
 	auth       *service.AuthService
 	cfg        *config.Config
 	bruteForce *middleware.BruteForce
+	jwt        *jwt.Manager
 }
 
 // NewAuthHandler creates an AuthHandler.
-func NewAuthHandler(auth *service.AuthService, cfg *config.Config, bf *middleware.BruteForce) *AuthHandler {
-	return &AuthHandler{auth: auth, cfg: cfg, bruteForce: bf}
+func NewAuthHandler(auth *service.AuthService, cfg *config.Config, bf *middleware.BruteForce, jwtMgr *jwt.Manager) *AuthHandler {
+	return &AuthHandler{auth: auth, cfg: cfg, bruteForce: bf, jwt: jwtMgr}
 }
 
 // registerRequest is the request body for POST /auth/register.
@@ -136,6 +138,11 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	if userID == "" {
 		response.Err(w, r, apierror.ErrUnauthorized)
 		return
+	}
+
+	// Revoke the current access token immediately via in-memory blacklist
+	if accessToken := cookie.ReadAccess(r); accessToken != "" {
+		h.jwt.RevokeAccessToken(accessToken)
 	}
 
 	if err := h.auth.Logout(r.Context(), userID, middleware.ExtractIP(r.RemoteAddr), r.UserAgent()); err != nil {

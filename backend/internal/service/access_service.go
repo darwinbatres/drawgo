@@ -61,6 +61,19 @@ func (s *AccessService) IsOrgOwner(ctx context.Context, userID, orgID string) bo
 	return s.HasOrgRole(ctx, userID, orgID, models.OrgRoleOwner)
 }
 
+// RequireSystemAdmin verifies the user is an OWNER of at least one organization.
+// This is used to protect system-wide operations (backups, system stats, logs).
+func (s *AccessService) RequireSystemAdmin(ctx context.Context, userID string) *apierror.Error {
+	isOwner, err := s.memberships.IsOwnerOfAny(ctx, userID)
+	if err != nil {
+		return apierror.ErrInternal
+	}
+	if !isOwner {
+		return apierror.ErrForbidden
+	}
+	return nil
+}
+
 // CanManageMembers checks if the user can invite/update/remove members (ADMIN+).
 func (s *AccessService) CanManageMembers(ctx context.Context, userID, orgID string) bool {
 	return s.HasOrgRole(ctx, userID, orgID, models.OrgRoleAdmin)

@@ -8,6 +8,7 @@ import (
 const (
 	defaultLimit = 50
 	maxLimit     = 100
+	maxOffset    = 10000
 )
 
 // parsePagination extracts limit/offset from query params with defaults and bounds.
@@ -23,6 +24,9 @@ func parsePagination(limitStr, offsetStr string) (int, int) {
 	offset := 0
 	if v, err := strconv.Atoi(offsetStr); err == nil && v >= 0 {
 		offset = v
+	}
+	if offset > maxOffset {
+		offset = maxOffset
 	}
 
 	return limit, offset

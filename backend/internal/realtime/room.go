@@ -143,6 +143,17 @@ func (r *Room) HandleMessage(sender *Client, msg *Message) {
 		r.cursorMu.Unlock()
 
 	case MsgTypeSceneUpdate:
+		// Only allow users with write permissions to broadcast scene updates.
+		// Viewers (from share links) should not be able to modify the board.
+		if sender.info.Role == "VIEWER" || sender.info.Role == "viewer" {
+			errMsg, _ := NewMessage(MsgTypeError, "", ErrorPayload{
+				Code:    "FORBIDDEN",
+				Message: "Viewers cannot modify the board",
+			})
+			data, _ := json.Marshal(errMsg)
+			sender.Send(data)
+			return
+		}
 		// Broadcast scene updates to all other clients (real-time sync)
 		synced, _ := NewMessage(MsgTypeSceneSynced, sender.info.UserID, msg.Payload)
 		r.broadcastExcept(sender, synced)

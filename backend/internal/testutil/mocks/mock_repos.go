@@ -773,6 +773,21 @@ func (mr *MockMembershipRepoMockRecorder) Exists(ctx, orgID, userID any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockMembershipRepo)(nil).Exists), ctx, orgID, userID)
 }
 
+// IsOwnerOfAny mocks base method.
+func (m *MockMembershipRepo) IsOwnerOfAny(ctx context.Context, userID string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsOwnerOfAny", ctx, userID)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsOwnerOfAny indicates an expected call of IsOwnerOfAny.
+func (mr *MockMembershipRepoMockRecorder) IsOwnerOfAny(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsOwnerOfAny", reflect.TypeOf((*MockMembershipRepo)(nil).IsOwnerOfAny), ctx, userID)
+}
+
 // GetByID mocks base method.
 func (m *MockMembershipRepo) GetByID(ctx context.Context, id string) (*models.Membership, error) {
 	m.ctrl.T.Helper()

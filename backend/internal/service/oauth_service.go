@@ -141,7 +141,14 @@ func (s *OAuthService) HandleCallback(ctx context.Context, provider, code, userA
 			return nil, nil, apierror.ErrInternal
 		}
 	} else {
-		// No link: create or find user by email, then link the account
+		// No link: create or find user by email, then link the account.
+		// Require a verified email before linking to an existing account to
+		// prevent account takeover via unverified OAuth provider emails.
+		if !userInfo.Verified {
+			s.log.Warn().Str("email", userInfo.Email).Str("provider", provider).Msg("OAuth email not verified, rejecting account link")
+			return nil, nil, apierror.New(http.StatusForbidden, "EMAIL_NOT_VERIFIED", "Your email must be verified by the OAuth provider before you can sign in")
+		}
+
 		user, _, err = s.users.CreateOrGetByOAuth(ctx, userInfo.Email, userInfo.Name, userInfo.Image, userInfo.Verified)
 		if err != nil {
 			s.log.Error().Err(err).Msg("failed to create/get user for OAuth")
