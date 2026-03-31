@@ -571,8 +571,25 @@ export function BoardEditor({
           elements?: ExcalidrawElements;
           files?: BinaryFiles;
         };
-        const rawElements = sceneJson.elements || [];
         const files = sceneJson.files || {};
+
+        // Sanitize elements: fix or remove corrupted entries that would crash Excalidraw.
+        // A backend bug (now fixed) in cleanOrphanedFiles could strip all element properties
+        // down to just {type, text}, losing x/y/width/height/points etc.
+        const pointBasedTypes = new Set(["line", "arrow", "freedraw"]);
+        const rawElements = (sceneJson.elements || []).filter((el) => {
+          // Drop elements completely missing geometry (sign of data-loss corruption)
+          if (el.type && el.x === undefined && el.y === undefined) {
+            console.warn(`Dropping corrupted element (no geometry):`, el.type, el.id);
+            return false;
+          }
+          // Drop line/arrow/freedraw missing required points array
+          if (pointBasedTypes.has(el.type) && !Array.isArray(el.points)) {
+            console.warn(`Dropping corrupted ${el.type} element (missing points):`, el.id);
+            return false;
+          }
+          return true;
+        });
 
         // Migrate search text elements inline before setting initial data
         const elements = rawElements.map((el) => {
@@ -785,11 +802,17 @@ export function BoardEditor({
           const data = payload as { elements?: ExcalidrawElements; files?: BinaryFiles };
           if (data && excalidrawRef.current) {
             if (data.elements) {
+              // Sanitize incoming elements to prevent crash on corrupted data
+              const ptTypes = new Set(["line", "arrow", "freedraw"]);
+              const safeElements = data.elements.filter(
+                (el) => (el.x !== undefined || el.y !== undefined) &&
+                  (!ptTypes.has(el.type) || Array.isArray(el.points))
+              );
               // Always combine elements and collaborators into a single updateScene
               // call. Excalidraw 0.18+ resets the cursor rendering layer during
               // element reconciliation; re-supplying collaborators prevents that.
               const sceneUpdate: Parameters<ExcalidrawAPI["updateScene"]>[0] = {
-                elements: data.elements,
+                elements: safeElements,
               };
               const currentCollabs = collaboratorsRef.current;
               if (currentCollabs.size > 0) {
@@ -1043,25 +1066,41 @@ export function BoardEditor({
         versionToRestore.version
       );
 
-      // Get the scene data from the version
-      const sceneJson = versionToRestore.sceneJson as {
+      // The version list doesn't include sceneJson (it's metadata only).
+      // Fetch the full board to get the restored scene data.
+      const restoredBoard = await boardApi.get(board.id);
+      const latestVersion = restoredBoard.latestVersion;
+      const sceneJson = latestVersion?.sceneJson as {
         elements?: ExcalidrawElements;
         files?: BinaryFiles;
-      };
+      } | undefined;
 
-      // Update the scene in Excalidraw
-      excalidrawRef.current.updateScene({
-        elements: sceneJson.elements || [],
-        appState: versionToRestore.appStateJson || undefined,
-      });
+      if (sceneJson) {
+        // Sanitize elements before applying
+        const pointBasedTypes = new Set(["line", "arrow", "freedraw"]);
+        const sanitizedElements = (sceneJson.elements || []).filter((el) => {
+          if (el.type && el.x === undefined && el.y === undefined) return false;
+          if (pointBasedTypes.has(el.type) && !Array.isArray(el.points)) return false;
+          return true;
+        });
 
-      // Add files if present
-      if (sceneJson.files && Object.keys(sceneJson.files).length > 0) {
-        excalidrawRef.current.addFiles(Object.values(sceneJson.files));
+        excalidrawRef.current.updateScene({
+          elements: sanitizedElements,
+          appState: latestVersion?.appStateJson || undefined,
+        });
+
+        if (sceneJson.files && Object.keys(sceneJson.files).length > 0) {
+          excalidrawRef.current.addFiles(Object.values(sceneJson.files));
+        }
       }
 
-      // Update etag
+      // Update etag and board state
       lastSavedEtagRef.current = result.etag;
+      lastSavedHashRef.current = hashSceneContent(
+        excalidrawRef.current.getSceneElements(),
+        excalidrawRef.current.getFiles()
+      );
+      hasUnsavedChangesRef.current = false;
 
       setShowRestoreModal(false);
       setVersionToRestore(null);

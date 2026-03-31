@@ -795,3 +795,5 @@ WebSocket hub statistics.
 
 Responses include `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers.
 429 Too Many Requests is returned when the limit is exceeded.
+
+> **Important:** Rate limiting is per-IP. When behind a reverse proxy (e.g., Cloudflare Tunnel), you **must** set `TRUSTED_PROXIES` (e.g., `cloudflare`) so the backend can extract the real client IP. Without this, all requests share a single rate limit bucket and quickly trigger 429 errors.

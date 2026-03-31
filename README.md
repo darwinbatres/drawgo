@@ -245,6 +245,7 @@ The file is fully documented with sections for every service (ports, database, J
 - [ ] `CORS_ALLOWED_ORIGINS` matches your public domain
 - [ ] `NEXT_PUBLIC_APP_URL` matches your public domain
 - [ ] HTTPS enabled via Caddy or Cloudflare Tunnel
+- [ ] `TRUSTED_PROXIES` set (e.g., `cloudflare` for Cloudflare Tunnel) — **required** for correct per-IP rate limiting behind a proxy
 - [ ] Database port (`5433`) not exposed externally
 - [ ] MinIO ports (`9010`, `9011`) not exposed externally
 - [ ] `DEMO_USER_*` variables removed (not just commented)

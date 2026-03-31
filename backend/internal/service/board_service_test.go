@@ -105,11 +105,12 @@ func TestExtractTextFromTiptapJSON(t *testing.T) {
 }
 
 func TestCleanOrphanedFiles(t *testing.T) {
-	scene := `{"elements":[{"type":"image","fileId":"used1"},{"type":"text","text":"hello"},{"type":"image","fileId":"used2"}],"files":{"used1":{"data":"a"},"used2":{"data":"b"},"orphan1":{"data":"c"}}}`
+	scene := `{"elements":[{"type":"image","fileId":"used1","x":10,"y":20,"width":100,"height":50},{"type":"text","text":"hello","x":5,"y":5,"strokeColor":"#000"},{"type":"image","fileId":"used2"},{"type":"arrow","points":[[0,0],[100,200]],"x":30}],"files":{"used1":{"data":"a"},"used2":{"data":"b"},"orphan1":{"data":"c"}}}`
 	result := cleanOrphanedFiles(json.RawMessage(scene))
 
 	var parsed struct {
-		Files map[string]interface{} `json:"files"`
+		Elements []map[string]interface{} `json:"elements"`
+		Files    map[string]interface{}   `json:"files"`
 	}
 	if err := json.Unmarshal(result, &parsed); err != nil {
 		t.Fatalf("failed to unmarshal: %v", err)
@@ -119,6 +120,22 @@ func TestCleanOrphanedFiles(t *testing.T) {
 	}
 	if _, ok := parsed.Files["orphan1"]; ok {
 		t.Error("orphan1 should have been removed")
+	}
+	// Verify all element properties are preserved (not stripped by marshaling)
+	if len(parsed.Elements) != 4 {
+		t.Fatalf("expected 4 elements, got %d", len(parsed.Elements))
+	}
+	img := parsed.Elements[0]
+	if img["x"] != float64(10) || img["y"] != float64(20) || img["width"] != float64(100) {
+		t.Errorf("image element properties lost: %v", img)
+	}
+	txt := parsed.Elements[1]
+	if txt["strokeColor"] != "#000" {
+		t.Errorf("text element properties lost: %v", txt)
+	}
+	arrow := parsed.Elements[3]
+	if arrow["points"] == nil || arrow["x"] != float64(30) {
+		t.Errorf("arrow element properties lost: %v", arrow)
 	}
 }
 

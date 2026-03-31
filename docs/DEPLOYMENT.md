@@ -65,6 +65,7 @@ Before deploying to production:
 - [ ] **`CORS_ALLOWED_ORIGINS`** — Set to your actual domain(s)
 - [ ] **`NEXT_PUBLIC_APP_URL`** — Set to your public URL
 - [ ] **HTTPS** — Enable via reverse proxy or Cloudflare Tunnel
+- [ ] **`TRUSTED_PROXIES`** — Set to `cloudflare` (Cloudflare Tunnel) or your proxy CIDRs. **Without this, rate limiting sees all requests as the same IP and returns 429 errors.**
 - [ ] **Ports** — Remove external port bindings for postgres/minio in production
 - [ ] **Backups** — Enable the backup profile with appropriate retention
 
@@ -85,6 +86,7 @@ Zero-config HTTPS access without opening firewall ports.
 
 ```bash
 CLOUDFLARE_TUNNEL_TOKEN=eyJhIjoiYWNj...
+TRUSTED_PROXIES=cloudflare
 CORS_ALLOWED_ORIGINS=https://drawgo.yourdomain.com
 NEXT_PUBLIC_APP_URL=https://drawgo.yourdomain.com
 ```

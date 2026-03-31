@@ -556,12 +556,18 @@ func cleanOrphanedFiles(sceneJSON json.RawMessage) json.RawMessage {
 		return sceneJSON
 	}
 
-	var scene sceneData
-	if err := json.Unmarshal(sceneJSON, &scene); err != nil {
+	// Use a generic representation so we don't lose any element properties.
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(sceneJSON, &raw); err != nil {
 		return sceneJSON
 	}
 
-	if len(scene.Files) == 0 {
+	filesRaw, ok := raw["files"]
+	if !ok {
+		return sceneJSON
+	}
+	var files map[string]json.RawMessage
+	if err := json.Unmarshal(filesRaw, &files); err != nil || len(files) == 0 {
 		return sceneJSON
 	}
 
@@ -571,22 +577,22 @@ func cleanOrphanedFiles(sceneJSON json.RawMessage) json.RawMessage {
 		Type   string `json:"type"`
 		FileID string `json:"fileId,omitempty"`
 	}
-	var elements []elementWithFileID
-	if err := json.Unmarshal(sceneJSON, &struct {
-		Elements *[]elementWithFileID `json:"elements"`
-	}{Elements: &elements}); err == nil {
-		for _, el := range elements {
-			if el.Type == "image" && el.FileID != "" {
-				usedFileIDs[el.FileID] = struct{}{}
+	if elemRaw, ok := raw["elements"]; ok {
+		var elements []elementWithFileID
+		if err := json.Unmarshal(elemRaw, &elements); err == nil {
+			for _, el := range elements {
+				if el.Type == "image" && el.FileID != "" {
+					usedFileIDs[el.FileID] = struct{}{}
+				}
 			}
 		}
 	}
 
 	// Remove orphaned files
 	changed := false
-	for fileID := range scene.Files {
+	for fileID := range files {
 		if _, ok := usedFileIDs[fileID]; !ok {
-			delete(scene.Files, fileID)
+			delete(files, fileID)
 			changed = true
 		}
 	}
@@ -595,7 +601,14 @@ func cleanOrphanedFiles(sceneJSON json.RawMessage) json.RawMessage {
 		return sceneJSON
 	}
 
-	cleaned, err := json.Marshal(scene)
+	// Marshal cleaned files back and update the scene
+	cleanedFiles, err := json.Marshal(files)
+	if err != nil {
+		return sceneJSON
+	}
+	raw["files"] = cleanedFiles
+
+	cleaned, err := json.Marshal(raw)
 	if err != nil {
 		return sceneJSON
 	}
